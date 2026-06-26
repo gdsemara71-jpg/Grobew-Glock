@@ -17,7 +17,7 @@ const CHART_KEY = process.env.CHART_KEY || "RR7M88ycUv8Y2ZXVT6kmgn19DF1kCY8x4X50
 const OKX = "https://www.okx.com";
 const BATCH_SIZE = 8;
 const TOTAL_SYMBOLS = 60;
-const MIN_CONVICTION = 7.5; // FIX #1: naikkan threshold
+const MIN_CONVICTION = 7.0; // High quality signals only
 
 // in-memory: { symbol → { ...signal, messageId } }
 const activeSignals = new Map();
@@ -37,11 +37,29 @@ function toOKXId(symbol) {
   return `${symbol.replace("USDT","")}-USDT-SWAP`;
 }
 
+// Blacklist meme/micro-cap coins yang tidak reliable untuk analisis teknikal
+const BLACKLIST = new Set([
+  "SATS","PEPE","SHIB","BONK","FLOKI","WIF","DEGEN","EIRO","MEME",
+  "BOME","DOGS","NEIRO","HMSTR","TURBO","CAT","MOG","SLERF","BODEN",
+  "PONKE","MYRO","POPCAT","BRETT","BABYDOGE","1000SATS","1000BONK",
+  "1000PEPE","1000SHIB","1000FLOKI","1000RATS","RATS","ORDI","SATS",
+]);
+
 async function getAllSymbols() {
   const d = await okx("/api/v5/market/tickers?instType=SWAP");
   if (!d?.data) { console.log("getAllSymbols gagal"); return []; }
+
   return d.data
-    .filter(t => t.instId.endsWith("USDT-SWAP") && parseFloat(t.volCcy24h) > 1_000_000)
+    .filter(t => {
+      if (!t.instId.endsWith("USDT-SWAP")) return false;
+      const base = t.instId.replace("-USDT-SWAP","");
+      if (BLACKLIST.has(base)) return false;
+      // Filter minimum volume lebih ketat: $20M/hari
+      if (parseFloat(t.volCcy24h) < 20_000_000) return false;
+      // Filter harga minimum $0.00001 (hindari micro-price manipulatif)
+      if (parseFloat(t.last) < 0.00001) return false;
+      return true;
+    })
     .sort((a, b) => parseFloat(b.volCcy24h) - parseFloat(a.volCcy24h))
     .slice(0, TOTAL_SYMBOLS)
     .map(t => t.instId.replace("-USDT-SWAP","") + "USDT");
