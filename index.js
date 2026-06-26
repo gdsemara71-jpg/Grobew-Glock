@@ -508,7 +508,7 @@ async function runScan() {
 
 // ─── CRON & SERVER ───────────────────────────────────────────────────────────
 
-cron.schedule("*/15 * * * *", async () => {
+cron.schedule("*/5 * * * *", async () => {
   await checkTPSL();
   await runScan();
 });
