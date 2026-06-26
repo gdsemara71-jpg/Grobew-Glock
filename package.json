@@ -1,0 +1,12 @@
+{
+  "name": "wizzard-futures",
+  "version": "2.0.0",
+  "main": "index.js",
+  "scripts": { "start": "node index.js" },
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-cron": "^3.0.3",
+    "node-fetch": "^2.7.0",
+    "form-data": "^4.0.0"
+  }
+}
